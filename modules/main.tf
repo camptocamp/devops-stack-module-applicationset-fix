@@ -10,7 +10,7 @@ resource "argocd_project" "this" {
  
     destination {
       server    = "https://kubernetes.default.svc"
-      namespace = var.argocd_namespace
+      namespace = var.namespace
     }
  
     orphaned_resources {
@@ -35,7 +35,7 @@ resource "argocd_application" "this" {
   }
 
   spec {
-    project = argocd_project.this.metadata.0.name
+    project = "default"
 
     source {
       repo_url        = "https://github.com/camptocamp/devops-stack-module-applicationset.git"
