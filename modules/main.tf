@@ -10,7 +10,7 @@ resource "argocd_project" "this" {
  
     destination {
       server    = "https://kubernetes.default.svc"
-      namespace = var.namespace
+      namespace = var.argocd_namespace
     }
  
     orphaned_resources {
@@ -63,7 +63,7 @@ resource "argocd_application" "this" {
 
     destination {
       server    = "https://kubernetes.default.svc"
-      namespace = var.namespace
+      namespace = var.argocd_namespace
     }
 
     sync_policy {
