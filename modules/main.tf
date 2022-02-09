@@ -6,7 +6,7 @@ resource "argocd_project" "this" {
  
   spec {
     description  = "${var.name} application project"
-    source_repos = ["https://github.com/camptocamp/devops-stack-module-applicationset.git"]
+    source_repos = var.project_source_repos
  
     destination {
       server    = "https://kubernetes.default.svc"

@@ -33,3 +33,9 @@ variable "template" {
   description = "ApplicationSet template"
   type        = any
 }
+
+variable "project_source_repos" {
+  description = "Allowed repositories in the AppProject"
+  type        = list(string)
+  default     = ["*"]
+}
