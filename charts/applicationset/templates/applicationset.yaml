@@ -1,0 +1,10 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Values.name }}
+spec:
+  generators:
+    {{ .Values.generators | nindent 4 }}
+  template: 
+    {{ .Values.template | nindent 4 }}
