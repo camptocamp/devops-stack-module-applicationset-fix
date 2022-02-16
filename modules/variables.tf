@@ -7,7 +7,7 @@ variable "argocd_namespace" {
 }
 
 variable "namespace" {
-  type    = string
+  type = string
 }
 
 variable "extra_yaml" {

@@ -3,16 +3,16 @@ resource "argocd_project" "this" {
     name      = var.name
     namespace = var.argocd_namespace
   }
- 
+
   spec {
     description  = "${var.name} application project"
     source_repos = var.project_source_repos
- 
+
     destination {
       server    = "https://kubernetes.default.svc"
       namespace = var.namespace
     }
- 
+
     orphaned_resources {
       warn = true
     }
