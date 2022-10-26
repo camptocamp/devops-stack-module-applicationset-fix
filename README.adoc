@@ -1,0 +1,278 @@
+= devops-stack-module-applicationset
+
+A https://devops-stack.io[DevOps Stack] module to deploy a generic ApplicationSet in Argo CD.
+
+== Usage
+
+You can instantiate this module using the example below:
+
+[source,terraform]
+----
+module "helloworld_apps" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-applicationset.git"
+
+  depends_on = [module.argocd]
+
+  name                   = "helloworld-apps"
+  argocd_namespace       = local.argocd_namespace
+  project_dest_namespace = "*"
+  project_source_repos = [
+    "https://github.com/camptocamp/devops-stack-helloworld-templates.git",
+  ]
+
+  generators = [
+    {
+      git = {
+        repoURL  = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
+        revision = "main"
+
+        directories = [
+          {
+            path = "apps/*"
+          }
+        ]
+      }
+    }
+  ]
+  template = {
+    metadata = {
+      name = "{{path.basename}}"
+    }
+
+    spec = {
+      project = "helloworld-apps"
+
+      source = {
+        repoURL        = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
+        targetRevision = "main"
+        path           = "{{path}}"
+
+        helm = {
+          valueFiles = ["values.yaml","secrets.yaml"]
+
+          # The following value defines this global variables that will be available to all apps in apps/*
+          # These are needed to generate the ingresses containing the name and base domain of the cluster.
+          values = <<-EOT
+            cluster:
+              name: "${module.eks.cluster_name}"
+              domain: "${module.eks.base_domain}"
+          EOT
+        }
+      }
+
+      destination = {
+        name      = "in-cluster"
+        namespace = "{{path.basename}}"
+      }
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          selfHeal   = true
+          prune      = true
+        }
+        syncOptions = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }
+}
+----
+
+This module first creates an Argo CD AppProject called `helloworld-apps` that will contain all other resources.
+
+Then, it creates an Application called `helloworld-apps` that itself only contains an homonymous ApplicationSet, which is created from the chart inside this repository and using the variables given on the instantiation (, `name`, `generators`, and `template`).
+
+image::./images/argocd_appset.png[]
+
+It is this ApplicationSet that will contain all the applications you have in the repository you defined in `repoURL`, in this example is `helloworld`.
+
+image::./images/argocd_app.png[]
+
+As you can see, the ApplicationSet template we give here is flexible enough that it can be configured as you like. For example, since we defined the path in the generator as a wildcard `apps/*`, we can also take this value to then name each application created depending on name of the folder where the chart is located.
+
+
+== Technical Reference
+
+=== Dependencies
+
+==== `module.argocd`
+
+As this is an application, it needs to be deployed after the deployment of Argo CD and consequently this module needs to have this explicit dependency.
+
+// BEGIN_TF_DOCS
+=== Requirements
+
+No requirements.
+
+=== Providers
+
+The following providers are used by this module:
+
+- [[provider_argocd]] <<provider_argocd,argocd>>
+
+- [[provider_null]] <<provider_null,null>>
+
+=== Modules
+
+No modules.
+
+=== Resources
+
+The following resources are used by this module:
+
+- https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/application[argocd_application.this] (resource)
+- https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/project[argocd_project.this] (resource)
+- https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource[null_resource.this] (resource)
+
+=== Required Inputs
+
+The following input variables are required:
+
+==== [[input_argocd_namespace]] <<input_argocd_namespace,argocd_namespace>>
+
+Description: Namespace used by Argo CD where the Application and AppProject resources should be created.
+
+Type: `string`
+
+==== [[input_generators]] <<input_generators,generators>>
+
+Description: ApplicationSet generators.
+
+Type: `any`
+
+==== [[input_name]] <<input_name,name>>
+
+Description: Name to give the AppProject and ApplicationSet (tecnically there is also an Application where the ApplicationSet will reside that will get the same name).
+
+Type: `string`
+
+==== [[input_template]] <<input_template,template>>
+
+Description: ApplicationSet template.
+
+Type: `any`
+
+=== Optional Inputs
+
+The following input variables are optional (have default values):
+
+==== [[input_project_dest_namespace]] <<input_project_dest_namespace,project_dest_namespace>>
+
+Description: Allowed destination namespace in the AppProject.
+
+Type: `string`
+
+Default: `"*"`
+
+==== [[input_project_source_repos]] <<input_project_source_repos,project_source_repos>>
+
+Description: List of repositories allowed to be scraped in this AppProject.
+
+Type: `list(string)`
+
+Default:
+[source,json]
+----
+[
+  "*"
+]
+----
+
+=== Outputs
+
+The following outputs are exported:
+
+==== [[output_id]] <<output_id,id>>
+
+Description: ID to pass other modules in order to refer to this module as a dependency.
+// END_TF_DOCS
+
+=== Reference in table format 
+
+.Show tables
+[%collapsible]
+====
+// BEGIN_TF_TABLES
+
+
+= Providers
+
+[cols="a,a",options="header,autowidth"]
+|===
+|Name |Version
+|[[provider_argocd]] <<provider_argocd,argocd>> |n/a
+|[[provider_null]] <<provider_null,null>> |n/a
+|===
+
+= Resources
+
+[cols="a,a",options="header,autowidth"]
+|===
+|Name |Type
+|https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/application[argocd_application.this] |resource
+|https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/project[argocd_project.this] |resource
+|https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource[null_resource.this] |resource
+|===
+
+= Inputs
+
+[cols="a,a,a,a,a",options="header,autowidth"]
+|===
+|Name |Description |Type |Default |Required
+|[[input_argocd_namespace]] <<input_argocd_namespace,argocd_namespace>>
+|Namespace used by Argo CD where the Application and AppProject resources should be created.
+|`string`
+|n/a
+|yes
+
+|[[input_generators]] <<input_generators,generators>>
+|ApplicationSet generators.
+|`any`
+|n/a
+|yes
+
+|[[input_name]] <<input_name,name>>
+|Name to give the AppProject and ApplicationSet (tecnically there is also an Application where the ApplicationSet will reside that will get the same name).
+|`string`
+|n/a
+|yes
+
+|[[input_project_dest_namespace]] <<input_project_dest_namespace,project_dest_namespace>>
+|Allowed destination namespace in the AppProject.
+|`string`
+|`"*"`
+|no
+
+|[[input_project_source_repos]] <<input_project_source_repos,project_source_repos>>
+|List of repositories allowed to be scraped in this AppProject.
+|`list(string)`
+|
+
+[source]
+----
+[
+  "*"
+]
+----
+
+|no
+
+|[[input_template]] <<input_template,template>>
+|ApplicationSet template.
+|`any`
+|n/a
+|yes
+
+|===
+
+= Outputs
+
+[cols="a,a",options="header,autowidth"]
+|===
+|Name |Description
+|[[output_id]] <<output_id,id>> |ID to pass other modules in order to refer to this module as a dependency.
+|===
+// END_TF_TABLES
+====
