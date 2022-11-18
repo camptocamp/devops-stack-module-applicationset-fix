@@ -9,16 +9,14 @@ You can instantiate this module using the example below:
 [source,terraform]
 ----
 module "helloworld_apps" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-applicationset.git"
+  source = "git::https://github.com/camptocamp/devops-stack-module-applicationset.git?ref=<RELEASE>"
 
   depends_on = [module.argocd]
 
   name                   = "helloworld-apps"
   argocd_namespace       = local.argocd_namespace
   project_dest_namespace = "*"
-  project_source_repos = [
-    "https://github.com/camptocamp/devops-stack-helloworld-templates.git",
-  ]
+  project_source_repos = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
 
   generators = [
     {
@@ -92,6 +90,121 @@ image::./images/argocd_app.png[]
 
 As you can see, the ApplicationSet template we give here is flexible enough that it can be configured as you like. For example, since we defined the path in the generator as a wildcard `apps/*`, we can also take this value to then name each application created depending on name of the folder where the chart is located.
 
+=== Using a private repository
+
+When your charts are stored inside a private repository, Argo CD needs to have the credentials necessary to have at least read access to the contents of the repository.
+
+This module has 2 variables you can use for that, depending on the type of credentials you want to configure, either HTTPS or SSH.
+
+==== SSH
+
+You'll need to pass a string containing a private SSH key in the variable `source_credentials_ssh_key` (you can pass the value however you want, as long as it is a string) and the repository needs to be of the type `git@address.com:owner/repository`.
+
+IMPORTANT: Do not hardcode your SSH private key as the example below! Either create the SSH key using Terraform and pass the output directly or use SOPS to store and pass the key as a secret. 
+
+[source,terraform]
+----
+module "helloworld_apps" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-applicationset.git?ref=<RELEASE>"
+
+  depends_on = [module.argocd]
+
+  name                   = "helloworld-apps"
+  argocd_namespace       = local.argocd_namespace
+  project_dest_namespace = "*"
+  project_source_repos = "git@github.com:camptocamp/devops-stack-helloworld-templates.git"
+
+  source_credentials_ssh_key = "-----BEGIN OPENSSH PRIVATE KEY-----\nfoo\nbar\n-----END OPENSSH PRIVATE KEY-----"
+
+  generators = [
+    {
+      git = {
+        repoURL  = "git@github.com:camptocamp/devops-stack-helloworld-templates.git"
+        revision = "main"
+
+        # ...
+
+      }
+    }
+  ]
+  template = {
+    metadata = {
+      name = "{{path.basename}}"
+    }
+
+    spec = {
+      project = "helloworld-apps"
+
+      source = {
+        repoURL  = "git@github.com:camptocamp/devops-stack-helloworld-templates.git"
+
+        # ...
+
+      }
+      
+      # ...
+
+    }
+  }
+}
+----
+
+==== HTTPS
+
+You'll need to pass the username and password inside the variable `source_credentials_https` and the repository needs to be of the type `https://address.com/owner/repository`.
+
+IMPORTANT: Do not hardcode your password the example below! It is recommended to pass the value as secret, either using SOPS or another provider. Another best practice would be to use a token you created on Github.com (or another provider) that has the least amount of access needed (in these use-case, Argo CD only needs read access).
+
+[source,terraform]
+----
+module "helloworld_apps" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-applicationset.git?ref=<RELEASE>"
+
+  depends_on = [module.argocd]
+
+  name                   = "helloworld-apps"
+  argocd_namespace       = local.argocd_namespace
+  project_dest_namespace = "*"
+  project_source_repos = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
+
+  source_credentials_https = {
+    username = "your_username"
+    password = "your_token_password"
+    https_insecure = false
+  }
+
+  generators = [
+    {
+      git = {
+        repoURL  = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
+        revision = "main"
+
+        # ...
+
+      }
+    }
+  ]
+  template = {
+    metadata = {
+      name = "{{path.basename}}"
+    }
+
+    spec = {
+      project = "helloworld-apps"
+
+      source = {
+        repoURL  = "https://github.com/camptocamp/devops-stack-helloworld-templates.git"
+
+        # ...
+
+      }
+      
+      # ...
+
+    }
+  }
+}
+----
 
 == Technical Reference
 
@@ -124,6 +237,8 @@ The following resources are used by this module:
 
 - https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/application[argocd_application.this] (resource)
 - https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/project[argocd_project.this] (resource)
+- https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/repository[argocd_repository.private_https_repo] (resource)
+- https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/repository[argocd_repository.private_ssh_repo] (resource)
 - https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource[null_resource.this] (resource)
 
 === Required Inputs
@@ -166,19 +281,45 @@ Type: `string`
 
 Default: `"*"`
 
-==== [[input_project_source_repos]] <<input_project_source_repos,project_source_repos>>
+==== [[input_project_source_repo]] <<input_project_source_repo,project_source_repo>>
 
-Description: List of repositories allowed to be scraped in this AppProject.
+Description: Repository allowed to be scraped in this AppProject.
 
-Type: `list(string)`
+Type: `string`
+
+Default: `"*"`
+
+==== [[input_source_credentials_https]] <<input_source_credentials_https,source_credentials_https>>
+
+Description: Credentials to connect to a private repository. Use this variable when connecting through HTTPS. You'll need to provide the the `username` and `password` values. If the TLS certificate for the HTTPS connection is not issued by a qualified CA, you can set `https_insecure` as true.
+
+Type:
+[source,hcl]
+----
+object({
+    username       = string
+    password       = string
+    https_insecure = bool
+  })
+----
 
 Default:
 [source,json]
 ----
-[
-  "*"
-]
+{
+  "https_insecure": false,
+  "password": null,
+  "username": null
+}
 ----
+
+==== [[input_source_credentials_ssh_key]] <<input_source_credentials_ssh_key,source_credentials_ssh_key>>
+
+Description: Credentials to connect to a private repository. Use this variable when connecting to a repository through SSH.
+
+Type: `string`
+
+Default: `null`
 
 === Outputs
 
@@ -213,6 +354,8 @@ Description: ID to pass other modules in order to refer to this module as a depe
 |Name |Type
 |https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/application[argocd_application.this] |resource
 |https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/project[argocd_project.this] |resource
+|https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/repository[argocd_repository.private_https_repo] |resource
+|https://registry.terraform.io/providers/oboukili/argocd/latest/docs/resources/repository[argocd_repository.private_ssh_repo] |resource
 |https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource[null_resource.this] |resource
 |===
 
@@ -245,18 +388,42 @@ Description: ID to pass other modules in order to refer to this module as a depe
 |`"*"`
 |no
 
-|[[input_project_source_repos]] <<input_project_source_repos,project_source_repos>>
-|List of repositories allowed to be scraped in this AppProject.
-|`list(string)`
+|[[input_project_source_repo]] <<input_project_source_repo,project_source_repo>>
+|Repository allowed to be scraped in this AppProject.
+|`string`
+|`"*"`
+|no
+
+|[[input_source_credentials_https]] <<input_source_credentials_https,source_credentials_https>>
+|Credentials to connect to a private repository. Use this variable when connecting through HTTPS. You'll need to provide the the `username` and `password` values. If the TLS certificate for the HTTPS connection is not issued by a qualified CA, you can set `https_insecure` as true.
 |
 
 [source]
 ----
-[
-  "*"
-]
+object({
+    username       = string
+    password       = string
+    https_insecure = bool
+  })
 ----
 
+|
+
+[source]
+----
+{
+  "https_insecure": false,
+  "password": null,
+  "username": null
+}
+----
+
+|no
+
+|[[input_source_credentials_ssh_key]] <<input_source_credentials_ssh_key,source_credentials_ssh_key>>
+|Credentials to connect to a private repository. Use this variable when connecting to a repository through SSH.
+|`string`
+|`null`
 |no
 
 |[[input_template]] <<input_template,template>>

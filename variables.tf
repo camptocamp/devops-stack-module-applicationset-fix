@@ -32,8 +32,28 @@ variable "project_dest_namespace" {
   default     = "*"
 }
 
-variable "project_source_repos" {
-  description = "List of repositories allowed to be scraped in this AppProject."
-  type        = list(string)
-  default     = ["*"]
+variable "project_source_repo" {
+  description = "Repository allowed to be scraped in this AppProject."
+  type        = string
+  default     = "*"
+}
+
+variable "source_credentials_https" {
+  description = "Credentials to connect to a private repository. Use this variable when connecting through HTTPS. You'll need to provide the the `username` and `password` values. If the TLS certificate for the HTTPS connection is not issued by a qualified CA, you can set `https_insecure` as true."
+  type = object({
+    username       = string
+    password       = string
+    https_insecure = bool
+  })
+  default = {
+    username       = null
+    password       = null
+    https_insecure = false
+  }
+}
+
+variable "source_credentials_ssh_key" {
+  description = "Credentials to connect to a private repository. Use this variable when connecting to a repository through SSH."
+  type        = string
+  default     = null
 }

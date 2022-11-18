@@ -1,3 +1,24 @@
+resource "argocd_repository" "private_https_repo" {
+  # This count here is nothing more than a way to conditionally deploy this resource. Although there is no loop inside 
+  # the resource, if the condition is true, the resource is deployed because there is exactly one iteration.
+  count = (var.source_credentials_https.password != null && startswith(var.project_source_repo, "https://")) ? 1 : 0
+
+  repo     = var.project_source_repo
+  username = var.source_credentials_https.username
+  password = var.source_credentials_https.password
+  insecure = var.source_credentials_https.https_insecure
+}
+
+resource "argocd_repository" "private_ssh_repo" {
+  # This count here is nothing more than a way to conditionally deploy this resource. Although there is no loop inside 
+  # the resource, if the condition is true, the resource is deployed because there is exactly one iteration.
+  count = (can(var.source_credentials_ssh_key) && startswith(var.project_source_repo, "git@")) ? 1 : 0
+
+  repo            = var.project_source_repo
+  username        = "git"
+  ssh_private_key = var.source_credentials_ssh_key
+}
+
 resource "argocd_project" "this" {
   metadata {
     name      = var.name
@@ -10,7 +31,7 @@ resource "argocd_project" "this" {
     # Concatenate the ApplicationSet repository with the allowed repositories in order to allow the ApplicationSet 
     # to be created in this project.
     source_repos = concat(
-      var.project_source_repos,
+      [var.project_source_repo],
       ["https://github.com/camptocamp/devops-stack-module-applicationset.git"]
     )
 
