@@ -80,7 +80,7 @@ module "helloworld_apps" {
 
 This module first creates an Argo CD AppProject called `helloworld-apps` that will contain all other resources.
 
-Then, it creates an Application called `helloworld-apps` that itself only contains an homonymous ApplicationSet, which is created from the chart inside this repository and using the variables given on the instantiation (, `name`, `generators`, and `template`).
+Then, it creates an Application called `helloworld-apps` that itself only contains an homonymous ApplicationSet, which is created from the chart inside this repository and using the variables given on the instantiation (`name`, `generators`, and `template`).
 
 image::./images/argocd_appset.png[]
 
