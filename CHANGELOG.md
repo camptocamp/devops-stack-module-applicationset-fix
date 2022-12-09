@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/camptocamp/devops-stack-module-applicationset/compare/v1.1.0...v1.1.1) (2022-12-09)
+
+
+### Documentation
+
+* add repo link to sidebar and correct images ([#7](https://github.com/camptocamp/devops-stack-module-applicationset/issues/7)) ([d6499fb](https://github.com/camptocamp/devops-stack-module-applicationset/commit/d6499fb2e8a601463a803e2380c453c4418238ae))
+
 ## [1.1.0](https://github.com/camptocamp/devops-stack-module-applicationset/compare/v1.0.0...v1.1.0) (2022-11-18)
 
 
