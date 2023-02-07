@@ -16,7 +16,7 @@ resource "argocd_repository" "private_https_repo" {
 resource "argocd_repository" "private_ssh_repo" {
   # This count here is nothing more than a way to conditionally deploy this resource. Although there is no loop inside 
   # the resource, if the condition is true, the resource is deployed because there is exactly one iteration.
-  count = (can(var.source_credentials_ssh_key) && startswith(var.project_source_repo, "git@")) ? 1 : 0
+  count = 0 #(can(var.source_credentials_ssh_key) && startswith(var.project_source_repo, "git@")) ? 1 : 0
 
   repo            = var.project_source_repo
   username        = "git"
