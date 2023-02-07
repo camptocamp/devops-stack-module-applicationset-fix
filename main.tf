@@ -41,6 +41,7 @@ resource "argocd_project" "this" {
 
     destination {
       name      = "in-cluster"
+      server    = "https://kubernetes.default.svc"
       namespace = var.project_dest_namespace
     }
 
@@ -49,6 +50,7 @@ resource "argocd_project" "this" {
     # instead of the wildcard "*" configured by default.
     destination {
       name      = "in-cluster"
+      server    = "https://kubernetes.default.svc"
       namespace = "argocd"
     }
 
