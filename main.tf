@@ -36,7 +36,7 @@ resource "argocd_project" "this" {
     # to be created in this project.
     source_repos = concat(
       [var.project_source_repo],
-      ["https://github.com/camptocamp/devops-stack-module-applicationset.git"]
+      ["https://github.com/camptocamp/devops-stack-module-applicationset-fix.git"]
     )
 
     destination {
@@ -80,7 +80,7 @@ resource "argocd_application" "this" {
     project = argocd_project.this.metadata.0.name
 
     source {
-      repo_url        = "https://github.com/camptocamp/devops-stack-module-applicationset.git"
+      repo_url        = "https://github.com/camptocamp/devops-stack-module-applicationset-fix.git"
       path            = "charts/applicationset"
       target_revision = "main"
       helm {
