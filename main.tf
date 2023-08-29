@@ -111,14 +111,22 @@ resource "argocd_application" "this" {
     }
 
     sync_policy {
-      automated = var.app_autosync
+      dynamic "automated" {
+        for_each = toset(var.app_autosync == { "allow_empty" = tobool(null), "prune" = tobool(null), "self_heal" = tobool(null) } ? [] : [var.app_autosync])
+        content {
+          prune       = automated.value.prune
+          self_heal   = automated.value.self_heal
+          allow_empty = automated.value.allow_empty
+        }
+      }
 
       retry {
-        backoff = {
-          duration     = ""
-          max_duration = ""
+        backoff {
+          duration     = "20s"
+          max_duration = "2m"
+          factor       = "2"
         }
-        limit = "0"
+        limit = "5"
       }
 
       sync_options = [
